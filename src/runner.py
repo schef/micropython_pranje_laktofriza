@@ -19,6 +19,7 @@ button_led = None
 button_input = None
 button_state = None
 washing_start = False
+start_timestamp = 0
 
 
 def get_millis():
@@ -64,8 +65,8 @@ def set_relay_state(num, state):
 
 
 def check_action(start, timeout):
-    if get_seconds() >= start:
-        if get_seconds() < (start + timeout):
+    if seconds_passed(start_timestamp) >= start:
+        if seconds_passed(start_timestamp) < (start + timeout):
             return True
     return False
 
@@ -165,9 +166,10 @@ def washing_loop():
 
 def on_button_callback(state):
     print("button %s" % (("released", "pressed")[state]))
-    global washing_start
+    global washing_start, start_timestamp
     if state and not washing_start:
         washing_start = True
+        start_timestamp = get_seconds()
         button_led.on()
 
 
