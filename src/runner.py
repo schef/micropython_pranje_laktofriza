@@ -1,5 +1,5 @@
-from time import ticks_ms, sleep_ms
 from machine import Pin
+from time import ticks_ms, sleep_ms
 
 RELAY_PINS = [18, 19, 20, 21, 22, 26, 27, 28]
 BUTTON_LED_PIN = 2
@@ -18,6 +18,7 @@ button_drive = None
 button_led = None
 button_input = None
 button_state = None
+washing_start = False
 
 
 def get_millis():
@@ -71,59 +72,84 @@ def check_action(start, timeout):
 
 def check_ventil_hladna():
     state = None
-    if check_action(0, 60): state = 1
-    elif check_action(380, 100): state = 1
-    else: state = 0
+    if check_action(0, 60):
+        state = 1
+    elif check_action(380, 100):
+        state = 1
+    else:
+        state = 0
     if get_relay_state(VENTIL_HLADNA) != state:
         set_relay_state(VENTIL_HLADNA, state)
 
+
 def check_ventil_topla():
     state = None
-    if check_action(60, 120): state = 1
-    elif check_action(1090, 100): state = 1
-    elif check_action(1330, 100): state = 1
-    elif check_action(1750, 120): state = 1
-    else: state = 0
+    if check_action(60, 120):
+        state = 1
+    elif check_action(1090, 100):
+        state = 1
+    elif check_action(1330, 100):
+        state = 1
+    elif check_action(1750, 120):
+        state = 1
+    else:
+        state = 0
     if get_relay_state(VENTIL_TOPLA) != state:
         set_relay_state(VENTIL_TOPLA, state)
 
 
 def check_motor():
     state = None
-    if check_action(60, 220): state = 1
-    elif check_action(440, 580): state = 1
-    elif check_action(1150, 120): state = 1
-    elif check_action(1390, 300): state = 1
-    elif check_action(1810, 140): state = 1
-    else: state = 0
+    if check_action(60, 220):
+        state = 1
+    elif check_action(440, 580):
+        state = 1
+    elif check_action(1150, 120):
+        state = 1
+    elif check_action(1390, 300):
+        state = 1
+    elif check_action(1810, 140):
+        state = 1
+    else:
+        state = 0
     if get_relay_state(MOTOR) != state:
         set_relay_state(MOTOR, state)
 
 
 def check_ventil_ispust():
     state = None
-    if check_action(180, 200): state = 1
-    elif check_action(940, 150): state = 1
-    elif check_action(1210, 120): state = 1
-    elif check_action(1630, 120): state = 1
-    elif check_action(1870, 180): state = 1
-    else: state = 0
+    if check_action(180, 200):
+        state = 1
+    elif check_action(940, 150):
+        state = 1
+    elif check_action(1210, 120):
+        state = 1
+    elif check_action(1630, 120):
+        state = 1
+    elif check_action(1870, 180):
+        state = 1
+    else:
+        state = 0
     if get_relay_state(VENTIL_ISPUST) != state:
         set_relay_state(VENTIL_ISPUST, state)
 
 
 def check_doziranje_luzina():
     state = None
-    if check_action(440, 60): state = 1
-    else: state = 0
+    if check_action(440, 60):
+        state = 1
+    else:
+        state = 0
     if get_relay_state(DOZIRANJE_LUZINA) != state:
         set_relay_state(DOZIRANJE_LUZINA, state)
 
 
 def check_doziranje_kiselina():
     state = None
-    if check_action(1390, 60): state = 1
-    else: state = 0
+    if check_action(1390, 60):
+        state = 1
+    else:
+        state = 0
     if get_relay_state(DOZIRANJE_KISELINA) != state:
         set_relay_state(DOZIRANJE_KISELINA, state)
 
@@ -139,7 +165,10 @@ def washing_loop():
 
 def on_button_callback(state):
     print("button %s" % (("released", "pressed")[state]))
-    set_relay_state(1, state)
+    global washing_start
+    if state and not washing_start:
+        washing_start = True
+        button_led.on()
 
 
 def check_button():
@@ -154,7 +183,8 @@ def loop():
     print("loop")
     while True:
         check_button()
-        washing_loop()
+        if washing_start:
+            washing_loop()
 
 
 def run():
