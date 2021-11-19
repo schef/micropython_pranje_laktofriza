@@ -1,4 +1,4 @@
-from machine import Pin
+from machine import Pin, reset
 from time import ticks_ms, sleep_ms
 
 RELAY_PINS = [18, 19, 20, 21, 22, 26, 27, 28]
@@ -155,6 +155,10 @@ def check_doziranje_kiselina():
         set_relay_state(DOZIRANJE_KISELINA, state)
 
 
+def check_reset():
+    if check_action(2050, 60):
+        reset()
+
 def washing_loop():
     check_ventil_hladna()
     check_ventil_topla()
@@ -162,6 +166,7 @@ def washing_loop():
     check_ventil_ispust()
     check_doziranje_luzina()
     check_doziranje_kiselina()
+    check_reset()
 
 
 def on_button_callback(state):
