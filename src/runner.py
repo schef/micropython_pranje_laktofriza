@@ -75,8 +75,6 @@ def check_ventil_hladna():
     state = None
     if check_action(0, 60):
         state = 1
-    elif check_action(380, 100):
-        state = 1
     else:
         state = 0
     if get_relay_state(VENTIL_HLADNA) != state:
@@ -86,6 +84,8 @@ def check_ventil_hladna():
 def check_ventil_topla():
     state = None
     if check_action(60, 120):
+        state = 1
+    elif check_action(380, 100):
         state = 1
     elif check_action(1090, 100):
         state = 1
