@@ -101,15 +101,15 @@ def check_ventil_topla():
 
 def check_motor():
     state = None
-    if check_action(60, 220):
+    if check_action(60, 200):
         state = 1
-    elif check_action(440, 580):
+    elif check_action(440, 560):
         state = 1
-    elif check_action(1150, 120):
+    elif check_action(1150, 100):
         state = 1
-    elif check_action(1390, 300):
+    elif check_action(1390, 280):
         state = 1
-    elif check_action(1810, 140):
+    elif check_action(1810, 120):
         state = 1
     else:
         state = 0
