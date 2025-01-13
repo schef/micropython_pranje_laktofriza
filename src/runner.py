@@ -1,199 +1,204 @@
+import asyncio
 from machine import Pin, reset
-from time import ticks_ms, sleep_ms
+import network
+from pico_oled_1_3_spi import OLED_1inch3, oled_demo_short
 
-RELAY_PINS = [18, 19, 20, 21, 22, 26, 27, 28]
-BUTTON_LED_PIN = 2
-BUTTON_INPUT_DRIVE_PIN = 4
-BUTTON_INPUT_PIN = 5
+wifi = None
+oled = None
+button_next = None
+button_select = None
+current_position = ""
+current_selection = 0
+current_mode = 0
+modes_options = ["OFF", "ON", "AUTO"]
 
-VENTIL_HLADNA = 1
-VENTIL_TOPLA = 2
-MOTOR = 3
-VENTIL_ISPUST = 4
-DOZIRANJE_LUZINA = 6
-DOZIRANJE_KISELINA = 7
-
-relays = []
-button_drive = None
-button_led = None
-button_input = None
-button_state = None
-washing_start = False
-start_timestamp = 0
-
-
-def get_millis():
-    return ticks_ms()
-
-
-def millis_passed(timestamp):
-    return get_millis() - timestamp
-
-
-def get_seconds():
-    return int(get_millis() / 1000)
-
-
-def seconds_passed(timestamp):
-    return get_seconds() - timestamp
-
+class MenuItem:
+    def __init__(self, name = "", items = [], func = None):
+        self.name = name
+        self.items = items
+        self.func = func
 
 def init():
-    print("init")
-    global button_led, relays, button_drive, button_input
-    button_led = Pin(BUTTON_LED_PIN, Pin.OUT)
-    button_led.off()
-    for pin in RELAY_PINS:
-        relays.append(Pin(pin, Pin.OUT))
-        relays[-1].on()
-    button_drive = Pin(BUTTON_INPUT_DRIVE_PIN, Pin.OUT)
-    button_drive.off()
-    button_input = Pin(BUTTON_INPUT_PIN, Pin.IN, Pin.PULL_UP)
+    global oled, button_next, button_select, wifi
+    print("[R]: init")
+    oled = OLED_1inch3()
 
+    if oled.rotate == 0:
+        BUTTON_NEXT_PIN = 15
+        BUTTON_SELECT_PIN = 17
+    else:
+        BUTTON_NEXT_PIN = 17
+        BUTTON_SELECT_PIN = 15
+    button_next = Pin(BUTTON_NEXT_PIN, Pin.IN, Pin.PULL_UP)
+    button_select = Pin(BUTTON_SELECT_PIN, Pin.IN, Pin.PULL_UP)
 
-def get_relay_state(num):
-    if num <= 0 or num > len(RELAY_PINS):
+    wifi = network.WLAN(network.STA_IF)
+    wifi.active(True)
+
+    handle_display()
+
+def draw_heater(status):
+    if status[0]:
+        oled.fill_rect(4, 4, 15, 15, oled.white)
+    else:
+        oled.rect(4, 4, 15, 15, oled.white)
+    if status[1]:
+        oled.fill_rect(24, 4, 15, 15, oled.white)
+    else:
+        oled.rect(24, 4, 15, 15, oled.white)
+    if status[2]:
+        oled.fill_rect(42, 4, 15, 15, oled.white)
+    else:
+        oled.rect(42, 4, 15, 15, oled.white)
+
+def display_home():
+    oled.fill(0x0000)
+    mode = modes_options[current_mode]
+    if mode == "OFF":
+        draw_heater([0, 0, 0])
+    elif mode == "ON":
+        draw_heater([1, 1, 1])
+    elif mode == "AUTO":
+        draw_heater([1, 0, 1])
+    else:
+        print("[R]: display_home not implemented")
+
+    oled.text(f"cur temp:  23.1 C", 4, 24, 0xFFFF)
+    oled.text(f"max temp: 100.0 C", 4, 24 + 8 + 4, 0xFFFF)
+    oled.text(f"mode: {mode}", 4, 24 + (8 + 4) * 2, 0xFFFF)
+    oled.show()
+
+def get_parts():
+    return list(filter(None, current_position.split("/")))
+
+def change_position(position = None):
+    global current_position
+    old_position = current_position
+    if position is None:
+        current_position = "/".join(get_parts()[:-1])
+    else:
+        current_position = "/".join(get_parts() + [position])
+    print(f"[R]: change_position[{old_position} -> {current_position}]")
+
+def jump_back():
+    change_position()
+
+def jump_to(position):
+    change_position(position)
+
+def get_menu_by_position():
+    print(f"[R]: get_menu_by_position[{repr(current_position)}]")
+    current_menu = menu
+    parts = get_parts()
+    print(f"[parts] = {parts}")
+    if not parts:
         return None
-    return int(not relays[num - 1].value())
+    for part in parts:
+        for item in current_menu.items:
+            if part == item.name:
+                current_menu = item
+    return current_menu
 
-
-def set_relay_state(num, state):
-    if num <= 0 or num > len(RELAY_PINS):
-        return
-    print("set_relay_state %d %s" % (num, str(state)))
-    relays[num - 1].value(int(not state))
-
-
-def check_action(start, timeout):
-    if seconds_passed(start_timestamp) >= start:
-        if seconds_passed(start_timestamp) < (start + timeout):
-            return True
-    return False
-
-
-def check_ventil_hladna():
-    state = None
-    if check_action(0, 60):
-        state = 1
+def handle_display():
+    print(f"[R]: handle_display[{repr(current_position)} : {current_selection}]")
+    current_menu = get_menu_by_position()
+    if current_menu is None:
+        display_home()
     else:
-        state = 0
-    if get_relay_state(VENTIL_HLADNA) != state:
-        set_relay_state(VENTIL_HLADNA, state)
+        # MENU
+        oled.fill(0x0000)
+        oled.text(f"{current_menu.name}", 0, 0, 0xFFFF)  # Highlight selected item
+        for i, item in enumerate(current_menu.items):
+            if i == current_selection:
+                oled.text(f"> {item.name}", 0, (1 + i) * 12, 0xFFFF)  # Highlight selected item
+            else:
+                oled.text(f"  {item.name}", 0, (1 + i) * 12, 0xFFFF)
+        oled.show()
 
-
-def check_ventil_topla():
-    state = None
-    if check_action(60, 120):
-        state = 1
-    elif check_action(380, 100):
-        state = 1
-    elif check_action(1090, 100):
-        state = 1
-    elif check_action(1330, 100):
-        state = 1
-    elif check_action(1750, 120):
-        state = 1
-    else:
-        state = 0
-    if get_relay_state(VENTIL_TOPLA) != state:
-        set_relay_state(VENTIL_TOPLA, state)
-
-
-def check_motor():
-    state = None
-    if check_action(60, 200):
-        state = 1
-    elif check_action(440, 560):
-        state = 1
-    elif check_action(1150, 100):
-        state = 1
-    elif check_action(1390, 280):
-        state = 1
-    elif check_action(1810, 120):
-        state = 1
-    else:
-        state = 0
-    if get_relay_state(MOTOR) != state:
-        set_relay_state(MOTOR, state)
-
-
-def check_ventil_ispust():
-    state = None
-    if check_action(180, 200):
-        state = 1
-    elif check_action(940, 150):
-        state = 1
-    elif check_action(1210, 120):
-        state = 1
-    elif check_action(1630, 120):
-        state = 1
-    elif check_action(1870, 180):
-        state = 1
-    else:
-        state = 0
-    if get_relay_state(VENTIL_ISPUST) != state:
-        set_relay_state(VENTIL_ISPUST, state)
-
-
-def check_doziranje_luzina():
-    state = None
-    if check_action(440, 60):
-        state = 1
-    else:
-        state = 0
-    if get_relay_state(DOZIRANJE_LUZINA) != state:
-        set_relay_state(DOZIRANJE_LUZINA, state)
-
-
-def check_doziranje_kiselina():
-    state = None
-    if check_action(1390, 60):
-        state = 1
-    else:
-        state = 0
-    if get_relay_state(DOZIRANJE_KISELINA) != state:
-        set_relay_state(DOZIRANJE_KISELINA, state)
-
-
-def check_reset():
-    if check_action(2050, 60):
-        reset()
-
-def washing_loop():
-    check_ventil_hladna()
-    check_ventil_topla()
-    check_motor()
-    check_ventil_ispust()
-    check_doziranje_luzina()
-    check_doziranje_kiselina()
-    check_reset()
-
-
-def on_button_callback(state):
-    print("button %s" % (("released", "pressed")[state]))
-    global washing_start, start_timestamp
-    if state and not washing_start:
-        washing_start = True
-        start_timestamp = get_seconds()
-        button_led.on()
-
-
-def check_button():
-    global button_state
-    state = button_input.value()
-    if state != button_state:
-        button_state = state
-        on_button_callback(not button_state)
-
-
-def loop():
-    print("loop")
+async def wait_for_select():
     while True:
-        check_button()
-        if washing_start:
-            washing_loop()
+        if button_select.value() == 0:
+            await asyncio.sleep(0.2)
+            break
+        await asyncio.sleep(0.01)
 
+async def handle_input():
+    print("[R]: handle_input")
+    global current_position, current_selection, current_mode
+    while True:
+        if button_next.value() == 0:
+            current_menu = get_menu_by_position()
+            if current_menu is not None:
+                current_selection = (current_selection + 1) % len(current_menu.items)
+                handle_display()
+            else:
+                current_mode = (current_mode + 1) % len(modes_options)
+                handle_display()
+            await asyncio.sleep(0.2)
+
+        if button_select.value() == 0:
+            current_menu = get_menu_by_position()
+            if current_menu is None:
+                jump_to("main")
+                handle_display()
+            else:
+                if current_menu.items[current_selection].func != None:
+                    await current_menu.items[current_selection].func()
+                    current_selection = 0
+                    handle_display()
+                else:
+                    jump_to(current_menu.items[current_selection].name)
+                    current_selection = 0
+                    handle_display()
+            await asyncio.sleep(0.2)
+        await asyncio.sleep(0.01)
+
+async def display_wireless_status():
+    oled.fill(0x0000)
+    if wifi.isconnected():
+        ssid = wifi.config('ssid')
+        rssi = wifi.status('rssi')  # Get RSSI value if supported
+        oled.text("Connected", 0, 0, 0xFFFF)
+        oled.text(f"SSID: {ssid}", 0, 12, 0xFFFF)
+        oled.text(f"RSSI: {rssi} dBm", 0, 24, 0xFFFF)
+    else:
+        oled.text("Not Connected", 0, 0, 0xFFFF)
+    oled.show()
+    await wait_for_select()
+
+async def menu_call_jump_back():
+    change_position()
+
+async def menu_call_oled_demo():
+    await oled_demo_short(oled)
+
+async def menu_call_wifi_status():
+    await display_wireless_status()
+
+async def menu_call_reboot():
+    oled.fill(0x0000)
+    oled.text(f"REBOOT", int(128 / 2) - int(8 * 6 / 2), int(64 / 2) - int(8 / 2), 0xFFFF)
+    oled.show()
+    reset()
+
+menu = MenuItem(items = [
+    MenuItem(name = "main", items = [
+        MenuItem(name = "demo", func = menu_call_oled_demo),
+        MenuItem(name = "settings", items = [
+            MenuItem(name = "reboot", func = menu_call_reboot),
+            MenuItem(name = "wifi", func = menu_call_wifi_status),
+            MenuItem(name = "back", func = menu_call_jump_back),
+        ]),
+        MenuItem(name = "back", func = menu_call_jump_back), # display home screen
+    ])])
+
+async def main():
+    init()
+    tasks = []
+    tasks.append(asyncio.create_task(handle_input()))
+    for task in tasks:
+        await task
+    print("[R]: error loop task finished!")
 
 def run():
-    init()
-    loop()
+    asyncio.run(main())
