@@ -2,17 +2,25 @@ import asyncio
 from machine import Pin, reset, SPI
 import network
 from pico_oled_1_3_spi import OLED_1inch3, oled_demo_short
+from max31865 import MAX31865
+import washing_logic
 
-PIN_SPI_MISO = None
-PIN_SPI_MOSI = 11
-PIN_SPI_SCK = 10
+PIN_OLED_SPI_MOSI = 11
+PIN_OLED_SPI_SCK = 10
 PIN_OLED_RST = 12
-PIN_SPI_OLED_DC = 8
-PIN_SPI_OLED_CS = 9
+PIN_OLED_SPI_DC = 8
+PIN_OLED_SPI_CS = 9
+
+PIN_MAX_SPI_CS = 5
+PIN_MAX_SPI_MOSI = 3
+PIN_MAX_SPI_MISO = 4
+PIN_MAX_SPI_SCK = 2
 
 wifi = None
 oled = None
-spi = None
+spi_oled = None
+spi_max = None
+max_sensor = None
 button_next = None
 button_select = None
 current_position = ""
@@ -27,10 +35,12 @@ class MenuItem:
         self.func = func
 
 def init():
-    global oled, wifi, spi, button_next, button_select
+    global oled, wifi, spi_oled, spi_max, max_sensor, button_next, button_select
     print("[R]: init")
-    spi = SPI(1, 20000_000, polarity = 0, phase = 0, sck = Pin(PIN_SPI_SCK), mosi = Pin(PIN_SPI_MOSI), miso = None)
-    oled = OLED_1inch3(spi = spi, dc = Pin(PIN_SPI_OLED_DC, Pin.OUT), cs = Pin(PIN_SPI_OLED_CS, Pin.OUT), rst = Pin(PIN_OLED_RST, Pin.OUT))
+    spi_oled = SPI(1, 20_000_000, polarity = 0, phase = 0, sck = Pin(PIN_OLED_SPI_SCK), mosi = Pin(PIN_OLED_SPI_MOSI), miso = None)
+    oled = OLED_1inch3(spi = spi_oled, dc = Pin(PIN_OLED_SPI_DC, Pin.OUT), cs = Pin(PIN_OLED_SPI_CS, Pin.OUT), rst = Pin(PIN_OLED_RST, Pin.OUT))
+    spi_max = SPI(0, baudrate=5_000_000, phase = 1, sck = Pin(PIN_MAX_SPI_SCK), mosi = Pin(PIN_MAX_SPI_MOSI), miso = Pin(PIN_MAX_SPI_MISO))
+    max_sensor = MAX31865(spi = spi_max, cs = Pin(PIN_MAX_SPI_CS, Pin.OUT))
 
     if oled.rotate == 0:
         BUTTON_NEXT_PIN = 15
@@ -38,12 +48,13 @@ def init():
     else:
         BUTTON_NEXT_PIN = 17
         BUTTON_SELECT_PIN = 15
+
     button_next = Pin(BUTTON_NEXT_PIN, Pin.IN, Pin.PULL_UP)
     button_select = Pin(BUTTON_SELECT_PIN, Pin.IN, Pin.PULL_UP)
-
     wifi = network.WLAN(network.STA_IF)
     wifi.active(True)
-
+    washing_logic.register_on_washing_callback(on_washing_callback)
+    washing_logic.init()
     handle_display()
 
 def draw_heater(status):
@@ -62,19 +73,10 @@ def draw_heater(status):
 
 def display_home():
     oled.fill(0x0000)
-    mode = modes_options[current_mode]
-    if mode == "OFF":
-        draw_heater([0, 0, 0])
-    elif mode == "ON":
-        draw_heater([1, 1, 1])
-    elif mode == "AUTO":
-        draw_heater([1, 0, 1])
-    else:
-        print("[R]: display_home not implemented")
-
-    oled.text(f"cur temp:  23.1 C", 4, 24, 0xFFFF)
-    oled.text(f"max temp: 100.0 C", 4, 24 + 8 + 4, 0xFFFF)
-    oled.text(f"mode: {mode}", 4, 24 + (8 + 4) * 2, 0xFFFF)
+    washing_status = ["OFF", "ON"][washing_logic.in_progress()]
+    oled.text(f"PRANJE: {washing_status}", 4, 4, 0xFFFF)
+    oled.text(f" {washing_logic.current_state}", 4, 4 + 14, 0xFFFF)
+    oled.text("TEMP: {:.2f} C".format(max_sensor.temperature), 4, 4 + 28, 0xFFFF)
     oled.show()
 
 def get_parts():
@@ -141,7 +143,10 @@ async def handle_input():
                 current_selection = (current_selection + 1) % len(current_menu.items)
                 handle_display()
             else:
-                current_mode = (current_mode + 1) % len(modes_options)
+                if not washing_logic.in_progress():
+                    washing_logic.start()
+                else:
+                    washing_logic.stop()
                 handle_display()
             await asyncio.sleep(0.2)
 
@@ -201,10 +206,15 @@ menu = MenuItem(items = [
         MenuItem(name = "back", func = menu_call_jump_back), # display home screen
     ])])
 
+def on_washing_callback():
+    if current_position == "":
+        display_home()
+
 async def main():
     init()
     tasks = []
     tasks.append(asyncio.create_task(handle_input()))
+    tasks.append(asyncio.create_task(washing_logic.loop()))
     for task in tasks:
         await task
     print("[R]: error loop task finished!")
