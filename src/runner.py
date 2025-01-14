@@ -1,10 +1,18 @@
 import asyncio
-from machine import Pin, reset
+from machine import Pin, reset, SPI
 import network
 from pico_oled_1_3_spi import OLED_1inch3, oled_demo_short
 
+PIN_SPI_MISO = None
+PIN_SPI_MOSI = 11
+PIN_SPI_SCK = 10
+PIN_OLED_RST = 12
+PIN_SPI_OLED_DC = 8
+PIN_SPI_OLED_CS = 9
+
 wifi = None
 oled = None
+spi = None
 button_next = None
 button_select = None
 current_position = ""
@@ -19,9 +27,10 @@ class MenuItem:
         self.func = func
 
 def init():
-    global oled, button_next, button_select, wifi
+    global oled, wifi, spi, button_next, button_select
     print("[R]: init")
-    oled = OLED_1inch3()
+    spi = SPI(1, 20000_000, polarity = 0, phase = 0, sck = Pin(PIN_SPI_SCK), mosi = Pin(PIN_SPI_MOSI), miso = None)
+    oled = OLED_1inch3(spi = spi, dc = Pin(PIN_SPI_OLED_DC, Pin.OUT), cs = Pin(PIN_SPI_OLED_CS, Pin.OUT), rst = Pin(PIN_OLED_RST, Pin.OUT))
 
     if oled.rotate == 0:
         BUTTON_NEXT_PIN = 15
@@ -47,9 +56,9 @@ def draw_heater(status):
     else:
         oled.rect(24, 4, 15, 15, oled.white)
     if status[2]:
-        oled.fill_rect(42, 4, 15, 15, oled.white)
+        oled.fill_rect(44, 4, 15, 15, oled.white)
     else:
-        oled.rect(42, 4, 15, 15, oled.white)
+        oled.rect(44, 4, 15, 15, oled.white)
 
 def display_home():
     oled.fill(0x0000)
