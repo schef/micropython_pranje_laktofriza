@@ -4,6 +4,7 @@ import network
 from pico_oled_1_3_spi import OLED_1inch3, oled_demo_short
 from max31865 import MAX31865
 import washing_logic
+import wifi_handler
 
 PIN_OLED_SPI_MOSI = 11
 PIN_OLED_SPI_SCK = 10
@@ -51,10 +52,10 @@ def init():
 
     button_next = Pin(BUTTON_NEXT_PIN, Pin.IN, Pin.PULL_UP)
     button_select = Pin(BUTTON_SELECT_PIN, Pin.IN, Pin.PULL_UP)
-    wifi = network.WLAN(network.STA_IF)
-    wifi.active(True)
     washing_logic.register_on_washing_callback(on_washing_callback)
     washing_logic.init()
+    wifi_handler.register_on_connection_changed_callback(on_connection_changed_callback)
+    wifi_handler.init()
     handle_display()
 
 def draw_heater(status):
@@ -74,9 +75,13 @@ def draw_heater(status):
 def display_home():
     oled.fill(0x0000)
     washing_status = ["OFF", "ON"][washing_logic.in_progress()]
-    oled.text(f"PRANJE: {washing_status}", 4, 4, 0xFFFF)
-    oled.text(f" {washing_logic.current_state}", 4, 4 + 14, 0xFFFF)
-    oled.text("TEMP: {:.2f} C".format(max_sensor.temperature), 4, 4 + 28, 0xFFFF)
+    wifi_status = ["no conn", wifi_handler.SSID][wifi_handler.wlan.isconnected()]
+    oled.text(f"PRANJE: {washing_status}", 4, 0, 0xFFFF)
+    oled.text(f" {washing_logic.current_state}", 4, 14, 0xFFFF)
+    oled.text("TEMP: {:.2f} C".format(max_sensor.temperature), 4, 28, 0xFFFF)
+    oled.text(f"WIFI: {wifi_status}", 4, 42, 0xFFFF)
+    if wifi_handler.wlan.isconnected():
+        oled.text(f" RSSI: {wifi_handler.rssi}", 4, 56, 0xFFFF)
     oled.show()
 
 def get_parts():
@@ -210,11 +215,16 @@ def on_washing_callback():
     if current_position == "":
         display_home()
 
+def on_connection_changed_callback():
+    if current_position == "":
+        display_home()
+
 async def main():
     init()
     tasks = []
     tasks.append(asyncio.create_task(handle_input()))
     tasks.append(asyncio.create_task(washing_logic.loop()))
+    tasks.append(asyncio.create_task(wifi_handler.loop()))
     for task in tasks:
         await task
     print("[R]: error loop task finished!")
