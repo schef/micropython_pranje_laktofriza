@@ -179,6 +179,9 @@ def stop():
     global washing_start, start_timestamp, current_state
     washing_start = False
     start_timestamp = 0
+    for i in range(len(relays)):
+        if get_relay_state(i) != 0:
+            set_relay_state(i, 0)
     current_state = ""
 
 def in_progress():
@@ -187,6 +190,6 @@ def in_progress():
 async def loop():
     print("[WL]: loop")
     while True:
-        if washing_start:
+        if washing_start and start_timestamp > 0:
             await washing_loop()
         await asyncio.sleep(1)
