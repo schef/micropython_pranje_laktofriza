@@ -42,6 +42,9 @@ class Led:
                 self.output.off()
         self.state = state
 
+    def get_state(self):
+        return self.state
+
 def set_state_by_name(name, state):
     print("[LEDS]: set_state_by_name(%s, %s)" % (name, state))
     for relay in relays:

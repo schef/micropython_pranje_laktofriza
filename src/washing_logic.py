@@ -3,11 +3,11 @@ from common import get_seconds, seconds_passed
 import common_pins
 import leds
 
-washing_start = False
+in_progress_status = False
 start_timestamp = 0
 current_state = ""
 timeout = 0
-on_washing_state_change_cb = None
+on_state_change_cb = None
 
 pin_relays = [
     common_pins.VENTIL_HLADNA,
@@ -22,9 +22,9 @@ def init():
     print("[WL]: init")
     stop()
 
-def register_on_washing_state_change_cb(func):
-    global on_washing_state_change_cb
-    on_washing_state_change_cb = func
+def register_on_state_change_cb(func):
+    global on_state_change_cb
+    on_state_change_cb = func
 
 def get_relay_state(pin):
     return leds.get_state_by_name(pin.name)
@@ -32,9 +32,7 @@ def get_relay_state(pin):
 def set_relay_state(pin, state):
     global current_state
     leds.set_state_by_name(pin.name, state)
-    current_state = f"{pin.name} {state}"
-    if on_washing_state_change_cb is not None:
-        on_washing_state_change_cb(f"{pin.name} {state}")
+    set_currert_state(f"{pin.name} {state}")
 
 def check_action(start, timeout):
     if seconds_passed(start_timestamp) >= start:
@@ -136,31 +134,33 @@ async def washing_loop():
 
 def start():
     print("[WL]: start")
-    global washing_start, start_timestamp, current_state
-    washing_start = True
+    global in_progress_status, start_timestamp, current_state
+    in_progress_status = True
     start_timestamp = get_seconds()
-    current_state = "ON"
-    if on_washing_state_change_cb is not None:
-        on_washing_state_change_cb("ON")
+    set_currert_state("ON")
 
 def stop():
     print("[WL]: stop")
-    global washing_start, start_timestamp, current_state
-    washing_start = False
+    global in_progress_status, start_timestamp, current_state
+    in_progress_status = False
     start_timestamp = 0
     for pin in pin_relays:
         if get_relay_state(pin) != 0:
             set_relay_state(pin, 0)
-    current_state = "OFF"
-    if on_washing_state_change_cb is not None:
-        on_washing_state_change_cb("OFF")
+    set_currert_state("OFF")
 
 def in_progress():
-    return washing_start
+    return in_progress_status
+
+def set_currert_state(state):
+    global current_state
+    current_state = state
+    if on_state_change_cb is not None:
+        on_state_change_cb(state)
 
 async def loop():
     print("[WL]: loop")
     while True:
-        if washing_start and start_timestamp > 0:
+        if in_progress_status and start_timestamp > 0:
             await washing_loop()
         await asyncio.sleep(1)

@@ -23,6 +23,7 @@ class TempReader:
                                             Pin.OUT))
         self.dirty = False
         self.data = None
+        self.last_data = None
         self.error_msg = None
         self.timestamp = None
         self.timeout = 60 * 1000
@@ -30,10 +31,14 @@ class TempReader:
     async def action(self):
         try:
             self.data = self.max_sensor.temperature()
+            self.last_data = self.data
             self.dirty = True
         except Exception as e:
             print("[SENSORS]: ERROR @ %s read with %s" % (self.alias, e))
             self.error_msg = e
+
+    def get_temperature(self):
+        return self.last_data
 
 def register_on_state_change_callback(cb):
     global on_state_change_cb

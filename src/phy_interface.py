@@ -3,6 +3,7 @@ import uasyncio as asyncio
 import buttons
 import oled_display
 import washing_logic
+import cooling_logic
 
 async def on_button_state_change_callback(alias, data):
     if alias == common_pins.OLED_BUTTON_NEXT.name:
@@ -14,9 +15,19 @@ async def on_button_state_change_callback(alias, data):
 
 def on_data_received(thing):
     if thing.path == "cooling":
-        pass
+        if thing.data == "1" and not washing_logic.in_progress():
+            cooling_logic.start()
+            if on_state_change_cb is not None:
+                on_state_change_cb(thing.path, "1")
+        elif thing.data == "0":
+            cooling_logic.stop()
+            if on_state_change_cb is not None:
+                on_state_change_cb(thing.path, "0")
+        elif thing.data == "":
+            if on_state_change_cb is not None:
+                on_state_change_cb(thing.path, str(int(cooling_logic.in_progress())))
     elif thing.path == "washing":
-        if thing.data == "1":
+        if thing.data == "1" and not cooling_logic.in_progress():
             washing_logic.start()
             if on_state_change_cb is not None:
                 on_state_change_cb(thing.path, "1")

@@ -4,8 +4,8 @@ import mqtt
 import version
 import phy_interface
 import leds
-import common_pins
 import washing_logic
+import cooling_logic
 
 class Thing:
     def __init__(self, path=None, alias=None, ignore_duplicates_out=False, ignore_duplicates_in=False, cb_out=None, cb_in=None):
@@ -39,6 +39,7 @@ things = [
     Thing("washing", cb_in=phy_interface.on_data_received),
     Thing("washing_state"),
     Thing("cooling", cb_in=phy_interface.on_data_received),
+    Thing("cooling_state"),
     Thing("heartbeat"),
 ]
 
@@ -91,12 +92,18 @@ def on_washing_state_change_cb(state):
     if t is not None:
         send_msg_req(t, state)
 
+def on_cooling_state_change_cb(state):
+    t = get_thing_from_path("cooling_state")
+    if t is not None:
+        send_msg_req(t, state)
+
 def init():
     print("[THINGS]: init")
     sensors.register_on_state_change_callback(on_sensor_state_change_callback)
     phy_interface.register_on_state_change_callback(on_sensor_state_change_callback)
     mqtt.register_on_message_received_callback(on_mqtt_message_received_callback)
-    washing_logic.register_on_washing_state_change_cb(on_washing_state_change_cb)
+    washing_logic.register_on_state_change_cb(on_washing_state_change_cb)
+    cooling_logic.register_on_state_change_cb(on_cooling_state_change_cb)
 
 async def handle_msg_reqs():
     for t in things:
