@@ -5,7 +5,8 @@ import common_pins
 on_state_change_cb = None
 buttons = []
 button_pins = [common_pins.OLED_BUTTON_NEXT,
-               common_pins.OLED_BUTTON_SELECT]
+               common_pins.OLED_BUTTON_SELECT,
+               common_pins.BUTTON]
 
 class Button:
     def __init__(self, pin, active_high = False):
@@ -21,7 +22,7 @@ class Button:
         if state != self.state:
             self.state = state
             print("[BUTTONS]: %s -> %d" % (self.name, self.state))
-            if on_state_change_cb:
+            if on_state_change_cb is not None:
                 on_state_change_cb(self.name, self.state)
 
 def register_on_state_change_callback(cb):

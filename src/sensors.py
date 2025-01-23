@@ -27,7 +27,7 @@ class TempReader:
         self.last_data = None
         self.error_msg = None
         self.timestamp = None
-        self.timeout = 60 * 1000
+        self.timeout = 10 * 1000
 
     async def action(self):
         try:

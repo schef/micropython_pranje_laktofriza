@@ -5,13 +5,25 @@ import oled_display
 import washing_logic
 import cooling_logic
 
-async def on_button_state_change_callback(alias, data):
-    if alias == common_pins.OLED_BUTTON_NEXT.name:
+def on_button_state_change_callback(alias, data):
+    #if alias == common_pins.OLED_BUTTON_NEXT.name:
+    #    if data == 1:
+    #        await oled_display.handle_button_next()
+    #elif alias == common_pins.OLED_BUTTON_SELECT.name:
+    #    if data == 1:
+    #        await oled_display.handle_button_select()
+    if alias == common_pins.BUTTON.name:
         if data == 1:
-            await oled_display.handle_button_next()
-    elif alias == common_pins.OLED_BUTTON_SELECT.name:
-        if data == 1:
-            await oled_display.handle_button_select()
+            if washing_logic.in_progress():
+                washing_logic.stop()
+                if on_state_change_cb is not None:
+                    on_state_change_cb("washing", "0")
+                oled_display.set_current_mode("")
+            else:
+                washing_logic.start()
+                if on_state_change_cb is not None:
+                    on_state_change_cb("washing", "1")
+                oled_display.set_current_mode("washing")
 
 def on_data_received(thing):
     if thing.path == "cooling":
