@@ -55,15 +55,21 @@ async def loop():
             temperature = sensors.environment_sensors[0].get_temperature()
             if temperature is not None:
                 if temperature > 4.0:
-                    kompresor = leds.get_led_by_name(common_pins.KOMPRESOR)
+                    kompresor = leds.get_led_by_name(common_pins.KOMPRESOR.name)
+                    mixer = leds.get_led_by_name(common_pins.MIXER.name)
                     if kompresor is not None:
                         if kompresor.get_state() != 0:
                             kompresor.set_state(1)
+                            if mixer is not None:
+                                mixer.set_state(1)
                             set_currert_state("COMPRESSOR ON")
-                else:
-                    kompresor = leds.get_led_by_name(common_pins.KOMPRESOR)
+                elif temperature < 3.0:
+                    kompresor = leds.get_led_by_name(common_pins.KOMPRESOR.name)
+                    mixer = leds.get_led_by_name(common_pins.MIXER.name)
                     if kompresor is not None:
                         if kompresor.get_state() == 1:
                             kompresor.set_state(0)
+                            if mixer is not None:
+                                mixer.set_state(0)
                             set_currert_state("COMPRESSOR OFF")
         await asyncio.sleep(1)
