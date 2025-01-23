@@ -5,6 +5,7 @@ import leds
 import phy_interface
 import sensors
 import washing_logic
+import cooling_logic
 import wlan
 import mqtt
 import cli
@@ -43,6 +44,7 @@ def init():
     phy_interface.init()
     sensors.init()
     washing_logic.init()
+    cooling_logic.init()
     wlan.init()
     mqtt.init()
     cli.init()
@@ -59,6 +61,7 @@ async def main():
     tasks.append(asyncio.create_task(sensors.realtime_sensors_action()))
     tasks.append(asyncio.create_task(sensors.environment_sensors_action()))
     tasks.append(asyncio.create_task(washing_logic.loop()))
+    tasks.append(asyncio.create_task(cooling_logic.loop()))
     tasks.append(asyncio.create_task(wlan.loop()))
     tasks.append(asyncio.create_task(mqtt.loop_async()))
     tasks.append(asyncio.create_task(common.loop_async("CLI", cli.action)))

@@ -23,7 +23,7 @@ def on_button_state_change_callback(alias, data):
                 washing_logic.start()
                 if on_state_change_cb is not None:
                     on_state_change_cb("washing", "1")
-                oled_display.set_current_mode("washing")
+                oled_display.set_current_mode("SPAL")
 
 def on_data_received(thing):
     if thing.path == "cooling":
@@ -31,7 +31,7 @@ def on_data_received(thing):
             cooling_logic.start()
             if on_state_change_cb is not None:
                 on_state_change_cb(thing.path, "1")
-            oled_display.set_current_mode("cooling")
+            oled_display.set_current_mode("FRIG")
         elif thing.data == "0":
             cooling_logic.stop()
             if on_state_change_cb is not None:
