@@ -22,6 +22,7 @@ class Thing:
 things = [
     # sensors
     Thing("s/maxtemp", alias="MAX_TEMP", cb_in=sensors.on_data_request),
+    Thing("s/maxtemp_error", alias="MAX_TEMP_ERROR"),
 
     # phy outputs
     Thing("test/led", alias="ONBOARD_LED", cb_in=leds.on_relay_direct),
@@ -32,7 +33,7 @@ things = [
     Thing("r/doziranje_luzina", alias="DOZIRANJE_LUZINA", cb_in=leds.on_relay_direct),
     Thing("r/doziranje_kiselina", alias="DOZIRANJE_KISELINA", cb_in=leds.on_relay_direct),
     Thing("r/kompresor", alias="KOMPRESOR", cb_in=leds.on_relay_direct),
-    Thing("r/mjesanje", alias="MJESANJE", cb_in=leds.on_relay_direct),
+    Thing("r/mixer", alias="MIXER", cb_in=leds.on_relay_direct),
 
     # logic
     Thing("version", cb_in=version.req_version),
@@ -66,9 +67,6 @@ def send_msg_req(t, data):
 def on_sensor_state_change_callback(alias, data):
     t = get_thing_from_alias(alias)
     if t is not None:
-        if t.alias == "POWER_COUNTER":
-            if t.dirty_out == True:
-                t.data += data
         send_msg_req(t, data)
         return
 

@@ -4,6 +4,7 @@ import common
 import common_pins
 import struct
 import driver_max31865
+import oled_display
 
 environment_sensors = []
 realtime_sensors = []
@@ -30,7 +31,7 @@ class TempReader:
 
     async def action(self):
         try:
-            self.data = self.max_sensor.temperature()
+            self.data = self.max_sensor.temperature
             self.last_data = self.data
             self.dirty = True
         except Exception as e:
@@ -48,7 +49,7 @@ def register_on_state_change_callback(cb):
 def init():
     print("[SENSORS]: init")
     global environment_sensors, realtime_sensors
-    environment_sensors.append(TempReader(alias="TEMP"))
+    environment_sensors.append(TempReader(alias="MAX_TEMP"))
 
 async def environment_sensors_action():
     print("[SENSORS]: environment_sensors_action")
@@ -61,11 +62,12 @@ async def environment_sensors_action():
                     sensor.dirty = False
                     if on_state_change_cb is not None:
                         on_state_change_cb(sensor.alias, sensor.data)
+                    oled_display.refresh_screen()
 
-                if sensor.error_msg is not None:
-                    if on_state_change_cb is not None:
-                        on_state_change_cb(f"{sensor.alias}_ERROR", sensor.error_msg)
-                    sensor.error_msg = None
+            if sensor.error_msg is not None:
+                if on_state_change_cb is not None:
+                    on_state_change_cb(f"{sensor.alias}_ERROR", sensor.error_msg)
+                sensor.error_msg = None
             await asyncio.sleep_ms(0)
 
 async def realtime_sensors_action():

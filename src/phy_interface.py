@@ -19,10 +19,12 @@ def on_data_received(thing):
             cooling_logic.start()
             if on_state_change_cb is not None:
                 on_state_change_cb(thing.path, "1")
+            oled_display.set_current_mode("cooling")
         elif thing.data == "0":
             cooling_logic.stop()
             if on_state_change_cb is not None:
                 on_state_change_cb(thing.path, "0")
+            oled_display.set_current_mode("")
         elif thing.data == "":
             if on_state_change_cb is not None:
                 on_state_change_cb(thing.path, str(int(cooling_logic.in_progress())))
@@ -31,10 +33,12 @@ def on_data_received(thing):
             washing_logic.start()
             if on_state_change_cb is not None:
                 on_state_change_cb(thing.path, "1")
+            oled_display.set_current_mode("washing")
         elif thing.data == "0":
             washing_logic.stop()
             if on_state_change_cb is not None:
                 on_state_change_cb(thing.path, "0")
+            oled_display.set_current_mode("")
         elif thing.data == "":
             if on_state_change_cb is not None:
                 on_state_change_cb(thing.path, str(int(washing_logic.in_progress())))

@@ -14,7 +14,7 @@ relay_pins = [
     common_pins.DOZIRANJE_LUZINA,
     common_pins.DOZIRANJE_KISELINA,
     common_pins.KOMPRESOR,
-    common_pins.MJESANJE,
+    common_pins.MIXER,
 ]
 
 led_pins = [

@@ -1,7 +1,10 @@
+
 import asyncio
 from machine import Pin, reset, SPI
 from pico_oled_1_3_spi import OLED_1inch3, oled_demo_short
 import common_pins
+import wlan
+import sensors
 
 oled = None
 spi_oled = None
@@ -11,9 +14,7 @@ modes_options = ["OFF", "ON", "AUTO"]
 
 ##### CALLBACKS #####
 callbacks = {}
-washing_logic_in_progress_cb = None
-washing_logic_start_cb = None
-washing_logic_stop_cb = None
+current_mode = ""
 
 class MenuItem:
     def __init__(self, name = "", items = [], func = None):
@@ -26,6 +27,7 @@ def init():
     print("[OLED]: init")
     spi_oled = SPI(1, 20_000_000, polarity = 0, phase = 0, sck = Pin(common_pins.OLED_SPI_SCK.id), mosi = Pin(common_pins.OLED_SPI_MOSI.id), miso = None)
     oled = OLED_1inch3(spi = spi_oled, dc = Pin(common_pins.OLED_SPI_DC.id, Pin.OUT), cs = Pin(common_pins.OLED_SPI_CS.id, Pin.OUT), rst = Pin(common_pins.OLED_RST.id, Pin.OUT))
+    wlan.register_on_connection_changed_cb(on_connection_state_change_cb)
     handle_display()
 
 def draw_heater(status):
@@ -44,13 +46,16 @@ def draw_heater(status):
 
 def display_home():
     oled.fill(0x0000)
-    #wifi_status = ["no conn", wifi_handler.SSID][wifi_handler.wlan.isconnected()]
-    oled.text(f"MODE: ", 4, 0, 0xFFFF)
-    #oled.text(f" {washing_logic.current_state}", 4, 14, 0xFFFF)
-    #oled.text("TEMP: {:.2f} C".format("0.0"), 4, 28, 0xFFFF)
-    #oled.text(f"WIFI: {wifi_status}", 4, 42, 0xFFFF)
-    #if wifi_handler.wlan.isconnected():
-    #    oled.text(f" RSSI: {wifi_handler.rssi}", 4, 56, 0xFFFF)
+    wifi_status = ["no conn", wlan.credentials.wifi_ssid][wlan.wlan.isconnected()]
+    oled.text(f"MODE: {current_mode}", 4, 0, 0xFFFF)
+    temperature = sensors.environment_sensors[0].get_temperature()
+    if temperature:
+        oled.text("TEMP: {:.2f} C".format(temperature), 4, 28, 0xFFFF)
+    else:
+        oled.text("TEMP: None", 4, 28, 0xFFFF)
+    oled.text(f"WIFI: {wifi_status}", 4, 42, 0xFFFF)
+    if wlan.wlan.isconnected():
+        oled.text(f" RSSI: {wlan.rssi}", 4, 56, 0xFFFF)
     oled.show()
 
 def get_parts():
@@ -100,13 +105,6 @@ def handle_display():
                 oled.text(f"  {item.name}", 0, (1 + i) * 12, 0xFFFF)
         oled.show()
 
-async def wait_for_select():
-    while True:
-        if button_select.value() == 0:
-            await asyncio.sleep(0.2)
-            break
-        await asyncio.sleep(0.01)
-
 async def handle_button_next():
     global current_selection
     current_menu = get_menu_by_position()
@@ -138,19 +136,6 @@ async def handle_button_select():
             current_selection = 0
             handle_display()
 
-async def display_wireless_status():
-    oled.fill(0x0000)
-    if wifi.isconnected():
-        ssid = wifi.config('ssid')
-        rssi = wifi.status('rssi')  # Get RSSI value if supported
-        oled.text("Connected", 0, 0, 0xFFFF)
-        oled.text(f"SSID: {ssid}", 0, 12, 0xFFFF)
-        oled.text(f"RSSI: {rssi} dBm", 0, 24, 0xFFFF)
-    else:
-        oled.text("Not Connected", 0, 0, 0xFFFF)
-    oled.show()
-    await wait_for_select()
-
 ##### MENU #####
 
 async def menu_call_oled_demo():
@@ -162,9 +147,6 @@ async def menu_call_reboot():
     oled.show()
     reset()
 
-async def menu_call_wifi_status():
-    await display_wireless_status()
-
 async def menu_call_jump_back():
     change_position()
 
@@ -173,18 +155,22 @@ menu = MenuItem(items = [
         MenuItem(name = "demo", func = menu_call_oled_demo),
         MenuItem(name = "settings", items = [
             MenuItem(name = "reboot", func = menu_call_reboot),
-            MenuItem(name = "wifi", func = menu_call_wifi_status),
+            MenuItem(name = "wifi"),
             MenuItem(name = "back", func = menu_call_jump_back),
         ]),
         MenuItem(name = "back", func = menu_call_jump_back), # display home screen
     ])])
 
+def set_current_mode(mode):
+    global current_mode
+    current_mode = mode
+    refresh_screen()
+
 ##### CALLBACKS #####
 
-def on_washing_cb():
-    if current_position == "":
-        display_home()
+def on_connection_state_change_cb():
+    refresh_screen()
 
-def on_connection_changed_cb():
+def refresh_screen():
     if current_position == "":
         display_home()

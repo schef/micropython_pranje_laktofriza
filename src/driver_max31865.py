@@ -84,7 +84,6 @@ class MAX31865:
     def read_rtd(self):
         self.configure(0xA0)
         rtd = self.read(_MAX31865_RTD_MSB_REG, 2)
-        print("rtd", rtd)
         rtd = (rtd[0] << 8) | rtd[1]
         rtd >>= 1
         return rtd
@@ -101,6 +100,10 @@ class MAX31865:
     @property
     def temperature(self):
         raw = self.resistance
+
+        if raw == b'\x00\x00':
+            return None
+
         Z1 = -_RTD_A
         Z2 = _RTD_A * _RTD_A - (4 * _RTD_B)
         Z3 = (4 * _RTD_B) / _RTD_0
