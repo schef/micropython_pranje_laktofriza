@@ -127,3 +127,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+credentials.py
+extra/credentials.py
+src/credentials.py

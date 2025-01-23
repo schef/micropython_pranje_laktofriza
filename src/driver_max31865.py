@@ -54,8 +54,10 @@ class MAX31865:
     D0: 50/60Hz filter select (1 = 50 Hz, 0 = 60 Hz)
     """
     def configure(self, config):
+        self.cs.value(0)
         self.write(_MAX31865_CONFIGURATION_REG, config)
         time.sleep(0.065)
+        self.cs.value(1)
 
     def read(self, register, number_of_bytes = 1):
         # registers are accessed using the 0Xh addresses for reads
@@ -82,6 +84,7 @@ class MAX31865:
     def read_rtd(self):
         self.configure(0xA0)
         rtd = self.read(_MAX31865_RTD_MSB_REG, 2)
+        print("rtd", rtd)
         rtd = (rtd[0] << 8) | rtd[1]
         rtd >>= 1
         return rtd

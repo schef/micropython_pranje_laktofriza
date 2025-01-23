@@ -1,74 +1,39 @@
 import asyncio
-from machine import Pin
-from time import ticks_ms
+from common import get_seconds, seconds_passed
+import common_pins
+import leds
 
-RELAY_PINS = [18, 19, 20, 21, 22, 26, 27, 28]
-BUTTON_LED_PIN = 2
-BUTTON_INPUT_DRIVE_PIN = 4
-BUTTON_INPUT_PIN = 5
-
-VENTIL_HLADNA = 1
-VENTIL_TOPLA = 2
-MOTOR = 3
-VENTIL_ISPUST = 4
-DOZIRANJE_LUZINA = 6
-DOZIRANJE_KISELINA = 7
-
-relays = []
 washing_start = False
 start_timestamp = 0
 current_state = ""
 timeout = 0
-on_washing_calback = None
+on_washing_cb = None
 
-def get_millis():
-    return ticks_ms()
-
-def millis_passed(timestamp):
-    return get_millis() - timestamp
-
-def get_seconds():
-    return int(get_millis() / 1000)
-
-def seconds_passed(timestamp):
-    return get_seconds() - timestamp
+pin_relays = [
+    common_pins.VENTIL_HLADNA,
+    common_pins.VENTIL_TOPLA,
+    common_pins.MOTOR,
+    common_pins.VENTIL_ISPUST,
+    common_pins.DOZIRANJE_LUZINA,
+    common_pins.DOZIRANJE_KISELINA
+]
 
 def init():
     print("[WL]: init")
-    global relays
-    for pin in RELAY_PINS:
-        relays.append(Pin(pin, Pin.OUT))
-        relays[-1].on()
 
-def register_on_washing_callback(func):
-    global on_washing_calback
-    on_washing_calback = func
+def register_on_washing_cb(func):
+    global on_washing_cb
+    on_washing_cb = func
 
-def get_relay_state(num):
-    if num <= 0 or num > len(RELAY_PINS):
-        return None
-    return int(not relays[num - 1].value())
+def get_relay_state(pin):
+    leds.get_state_by_name(pin.name)
 
-def set_relay_state(num, state):
+def set_relay_state(pin, state):
     global current_state
-    if num <= 0 or num > len(RELAY_PINS):
-        return
-    print("[WL]: set_relay_state %d %s" % (num, str(state)))
-    relays[num - 1].value(int(not state))
-    if num == 1:
-        current_state = f"VNT_HLADNA {int(state)}"
-    elif num == 2:
-        current_state = f"VNT_TOPLA {int(state)}"
-    elif num == 3:
-        current_state = f"MOTOR {int(state)}"
-    elif num == 4:
-        current_state = f"VNT_ISPUST {int(state)}"
-    elif num == 6:
-        current_state = f"DOZ_LUZ {int(state)}"
-    elif num == 7:
-        current_state = f"DOZ_KISL {int(state)}"
-    if on_washing_calback is not None:
-        on_washing_calback()
+    leds.set_state_by_name(pin.name, state)
+    current_state = f"{pin.name} {state}"
+    if on_washing_cb is not None:
+        on_washing_cb()
 
 def check_action(start, timeout):
     if seconds_passed(start_timestamp) >= start:
@@ -82,8 +47,8 @@ def check_ventil_hladna():
         state = 1
     else:
         state = 0
-    if get_relay_state(VENTIL_HLADNA) != state:
-        set_relay_state(VENTIL_HLADNA, state)
+    if get_relay_state(common_pins.VENTIL_HLADNA) != state:
+        set_relay_state(common_pins.VENTIL_HLADNA, state)
 
 def check_ventil_topla():
     state = None
@@ -99,8 +64,8 @@ def check_ventil_topla():
         state = 1
     else:
         state = 0
-    if get_relay_state(VENTIL_TOPLA) != state:
-        set_relay_state(VENTIL_TOPLA, state)
+    if get_relay_state(common_pins.VENTIL_TOPLA) != state:
+        set_relay_state(common_pins.VENTIL_TOPLA, state)
 
 def check_motor():
     state = None
@@ -116,8 +81,8 @@ def check_motor():
         state = 1
     else:
         state = 0
-    if get_relay_state(MOTOR) != state:
-        set_relay_state(MOTOR, state)
+    if get_relay_state(common_pins.MOTOR) != state:
+        set_relay_state(common_pins.MOTOR, state)
 
 def check_ventil_ispust():
     state = None
@@ -133,8 +98,8 @@ def check_ventil_ispust():
         state = 1
     else:
         state = 0
-    if get_relay_state(VENTIL_ISPUST) != state:
-        set_relay_state(VENTIL_ISPUST, state)
+    if get_relay_state(common_pins.VENTIL_ISPUST) != state:
+        set_relay_state(common_pins.VENTIL_ISPUST, state)
 
 def check_doziranje_luzina():
     state = None
@@ -142,8 +107,8 @@ def check_doziranje_luzina():
         state = 1
     else:
         state = 0
-    if get_relay_state(DOZIRANJE_LUZINA) != state:
-        set_relay_state(DOZIRANJE_LUZINA, state)
+    if get_relay_state(common_pins.DOZIRANJE_LUZINA) != state:
+        set_relay_state(common_pins.DOZIRANJE_LUZINA, state)
 
 def check_doziranje_kiselina():
     state = None
@@ -151,8 +116,8 @@ def check_doziranje_kiselina():
         state = 1
     else:
         state = 0
-    if get_relay_state(DOZIRANJE_KISELINA) != state:
-        set_relay_state(DOZIRANJE_KISELINA, state)
+    if get_relay_state(common_pins.DOZIRANJE_KISELINA) != state:
+        set_relay_state(common_pins.DOZIRANJE_KISELINA, state)
 
 def check_stop():
     if check_action(2050, 60):
@@ -179,9 +144,9 @@ def stop():
     global washing_start, start_timestamp, current_state
     washing_start = False
     start_timestamp = 0
-    for i in range(len(relays)):
-        if get_relay_state(i) != 0:
-            set_relay_state(i, 0)
+    for pin in pin_relays:
+        if get_relay_state(pin) != 0:
+            set_relay_state(pin, 0)
     current_state = ""
 
 def in_progress():
