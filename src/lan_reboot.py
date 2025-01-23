@@ -1,20 +1,14 @@
 import uasyncio as asyncio
 import machine
-from phy_interface import lights, rollos
-import lan
+import phy_interface
+import wlan as lan
 
 async def action():
     reboot_confirmation = 0
     while True:
         if lan.reboot_requested:
             ready_list = []
-            for key in rollos:
-                rollo = rollos[key]
-                ready_list.append(bool(rollo.up.active))
-                ready_list.append(bool(rollo.down.active))
-            for key in lights:
-                light = lights[key]
-                ready_list.append(bool(light.state))
+            ready_list.append(bool(phy_interface.washing_logic.in_progress()))
             if not any(ready_list):
                 reboot_confirmation += 1
                 print(f"[RBT] reboot condition meet {reboot_confirmation}")

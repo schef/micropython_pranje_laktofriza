@@ -11,6 +11,7 @@ import cli
 import heartbeat
 import things
 import oled_display
+import lan_reboot
 
 async def process_time_measure(timeout=20):
     print("[RUNNER]: start process_time_measure")
@@ -64,6 +65,7 @@ async def main():
     tasks.append(asyncio.create_task(common.loop_async("CLI", cli.action)))
     tasks.append(asyncio.create_task(heartbeat.action()))
     tasks.append(asyncio.create_task(things.loop_async()))
+    tasks.append(asyncio.create_task(lan_reboot.action()))
     tasks.append(asyncio.create_task(process_time_measure()))
     for task in tasks:
         await task
