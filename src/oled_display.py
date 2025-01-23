@@ -44,14 +44,13 @@ def draw_heater(status):
 
 def display_home():
     oled.fill(0x0000)
-    washing_status = ["OFF", "ON"][washing_logic.in_progress()]
-    wifi_status = ["no conn", wifi_handler.SSID][wifi_handler.wlan.isconnected()]
-    oled.text(f"PRANJE: {washing_status}", 4, 0, 0xFFFF)
-    oled.text(f" {washing_logic.current_state}", 4, 14, 0xFFFF)
-    oled.text("TEMP: {:.2f} C".format(max_sensor.temperature), 4, 28, 0xFFFF)
-    oled.text(f"WIFI: {wifi_status}", 4, 42, 0xFFFF)
-    if wifi_handler.wlan.isconnected():
-        oled.text(f" RSSI: {wifi_handler.rssi}", 4, 56, 0xFFFF)
+    #wifi_status = ["no conn", wifi_handler.SSID][wifi_handler.wlan.isconnected()]
+    oled.text(f"MODE: ", 4, 0, 0xFFFF)
+    #oled.text(f" {washing_logic.current_state}", 4, 14, 0xFFFF)
+    #oled.text("TEMP: {:.2f} C".format("0.0"), 4, 28, 0xFFFF)
+    #oled.text(f"WIFI: {wifi_status}", 4, 42, 0xFFFF)
+    #if wifi_handler.wlan.isconnected():
+    #    oled.text(f" RSSI: {wifi_handler.rssi}", 4, 56, 0xFFFF)
     oled.show()
 
 def get_parts():

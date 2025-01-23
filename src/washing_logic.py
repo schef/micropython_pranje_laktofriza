@@ -7,7 +7,7 @@ washing_start = False
 start_timestamp = 0
 current_state = ""
 timeout = 0
-on_washing_cb = None
+on_washing_state_change_cb = None
 
 pin_relays = [
     common_pins.VENTIL_HLADNA,
@@ -20,20 +20,21 @@ pin_relays = [
 
 def init():
     print("[WL]: init")
+    stop()
 
-def register_on_washing_cb(func):
-    global on_washing_cb
-    on_washing_cb = func
+def register_on_washing_state_change_cb(func):
+    global on_washing_state_change_cb
+    on_washing_state_change_cb = func
 
 def get_relay_state(pin):
-    leds.get_state_by_name(pin.name)
+    return leds.get_state_by_name(pin.name)
 
 def set_relay_state(pin, state):
     global current_state
     leds.set_state_by_name(pin.name, state)
     current_state = f"{pin.name} {state}"
-    if on_washing_cb is not None:
-        on_washing_cb()
+    if on_washing_state_change_cb is not None:
+        on_washing_state_change_cb(f"{pin.name} {state}")
 
 def check_action(start, timeout):
     if seconds_passed(start_timestamp) >= start:
@@ -138,6 +139,9 @@ def start():
     global washing_start, start_timestamp, current_state
     washing_start = True
     start_timestamp = get_seconds()
+    current_state = "ON"
+    if on_washing_state_change_cb is not None:
+        on_washing_state_change_cb("ON")
 
 def stop():
     print("[WL]: stop")
@@ -147,7 +151,9 @@ def stop():
     for pin in pin_relays:
         if get_relay_state(pin) != 0:
             set_relay_state(pin, 0)
-    current_state = ""
+    current_state = "OFF"
+    if on_washing_state_change_cb is not None:
+        on_washing_state_change_cb("OFF")
 
 def in_progress():
     return washing_start

@@ -5,6 +5,7 @@ import version
 import phy_interface
 import leds
 import common_pins
+import washing_logic
 
 class Thing:
     def __init__(self, path=None, alias=None, ignore_duplicates_out=False, ignore_duplicates_in=False, cb_out=None, cb_in=None):
@@ -23,7 +24,7 @@ things = [
     Thing("s/maxtemp", alias="MAX_TEMP", cb_in=sensors.on_data_request),
 
     # phy outputs
-    Thing("test/led"),
+    Thing("test/led", alias="ONBOARD_LED", cb_in=leds.on_relay_direct),
     Thing("r/ventil_hladna", alias="VENTIL_HLADNA", cb_in=leds.on_relay_direct),
     Thing("r/ventil_topla", alias="VENTIL_TOPLA", cb_in=leds.on_relay_direct),
     Thing("r/motor", alias="MOTOR", cb_in=leds.on_relay_direct),
@@ -35,7 +36,8 @@ things = [
 
     # logic
     Thing("version", cb_in=version.req_version),
-    Thing("clean", cb_in=phy_interface.on_data_received),
+    Thing("washing", cb_in=phy_interface.on_data_received),
+    Thing("washing_state"),
     Thing("cooling", cb_in=phy_interface.on_data_received),
     Thing("heartbeat"),
 ]
@@ -84,11 +86,17 @@ def on_mqtt_message_received_callback(path, msg):
             t.dirty_in = True
         t.data = msg
 
+def on_washing_state_change_cb(state):
+    t = get_thing_from_path("washing_state")
+    if t is not None:
+        send_msg_req(t, state)
+
 def init():
     print("[THINGS]: init")
     sensors.register_on_state_change_callback(on_sensor_state_change_callback)
     phy_interface.register_on_state_change_callback(on_sensor_state_change_callback)
     mqtt.register_on_message_received_callback(on_mqtt_message_received_callback)
+    washing_logic.register_on_washing_state_change_cb(on_washing_state_change_cb)
 
 async def handle_msg_reqs():
     for t in things:

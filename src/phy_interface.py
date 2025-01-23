@@ -15,7 +15,7 @@ async def on_button_state_change_callback(alias, data):
 def on_data_received(thing):
     if thing.path == "cooling":
         pass
-    elif thing.path == "cleaning":
+    elif thing.path == "washing":
         if thing.data == "1":
             washing_logic.start()
             if on_state_change_cb is not None:

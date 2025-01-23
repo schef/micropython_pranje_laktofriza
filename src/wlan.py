@@ -39,6 +39,9 @@ def request_reboot():
     global reboot_requested
     reboot_requested = True
 
+def print_status():
+    print(f"[DEBUG] mac[{mac}] active[{wlan.active()}] isconnected[{wlan.isconnected()}] status[{wlan.status()}] ip[{wlan.ifconfig()}]")
+
 async def loop():
     global rssi
     while True:

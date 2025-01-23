@@ -12,6 +12,7 @@ import heartbeat
 import things
 import oled_display
 import lan_reboot
+import version
 
 async def process_time_measure(timeout=20):
     print("[RUNNER]: start process_time_measure")
@@ -41,9 +42,7 @@ def init():
     leds.init()
     phy_interface.init()
     sensors.init()
-    washing_logic.register_on_washing_cb(oled_display.on_washing_cb)
     washing_logic.init()
-    wlan.register_on_connection_changed_cb(oled_display.on_connection_changed_cb)
     wlan.init()
     mqtt.init()
     cli.init()

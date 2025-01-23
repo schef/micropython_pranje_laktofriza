@@ -60,10 +60,24 @@ def get_state_by_name(name):
             return led.state
     return None
 
+def get_led_by_name(name):
+    for relay in relays:
+        if relay.name == name:
+            return relay
+    for led in leds:
+        if led.name == name:
+            return led
+    return None
+
 def on_relay_direct(thing):
     state = int(thing.data) if thing.data in ("0", "1", 0, 1) else None
     if state is not None:
-        set_state_by_name(thing.alias, state)
+        led = get_led_by_name(thing.alias)
+        if led is not None:
+            if led.state != state:
+                led.set_state(state)
+                thing.data = state
+                thing.dirty_out = True
     if thing.data == "request":
         state = get_state_by_name(thing.alias)
         print(thing.alias, thing.data)

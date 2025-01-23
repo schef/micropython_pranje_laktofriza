@@ -5,7 +5,7 @@ import leds
 import buttons
 import sensors
 import mqtt
-import lan
+import wlan as lan
 import common
 
 spoll = None
