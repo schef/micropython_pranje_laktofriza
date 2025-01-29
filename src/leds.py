@@ -30,6 +30,8 @@ class Led:
         self.name = name
 
     def set_state(self, state):
+        if advertise_state_callback is not None:
+            advertise_state_callback(self.name, state)
         if self.active_high:
             if state:
                 self.output.off()
@@ -56,13 +58,9 @@ def set_state_by_name(name, state):
     for relay in relays:
         if relay.name == name:
             relay.set_state(state)
-            if advertise_state_callback is not None:
-                advertise_state_callback(name, state)
     for led in leds:
         if led.name == name:
             led.set_state(state)
-            if advertise_state_callback is not None:
-                advertise_state_callback(name, state)
 
 def get_state_by_name(name):
     for relay in relays:

@@ -38,12 +38,12 @@ things = [
 
     # logic
     Thing("version", cb_in=version.req_version),
-    Thing("washing", cb_in=phy_interface.on_data_received),
-    Thing("cooling", cb_in=phy_interface.on_data_received),
-    Thing("mixing", cb_in=phy_interface.on_data_received),
     Thing("b/washing", alias="BUTTON_WASHING"),
     Thing("b/cooling", alias="BUTTON_COOLING"),
     Thing("b/mixing", alias="BUTTON_MIXING"),
+    Thing("washing", alias="WASHING", cb_in=phy_interface.on_data_received),
+    Thing("cooling", alias="COOLING", cb_in=phy_interface.on_data_received),
+    Thing("mixing", alias="MIXING", cb_in=phy_interface.on_data_received),
     Thing("heartbeat"),
 ]
 
@@ -102,6 +102,7 @@ def on_phy_interface_advertise_state_callback(alias, state):
         send_msg_req(t, state)
 
 def on_leds_advertise_state_callback(alias, state):
+    print("TUSAM", alias, state)
     t = get_thing_from_alias(alias)
     if t is not None:
         send_msg_req(t, state)

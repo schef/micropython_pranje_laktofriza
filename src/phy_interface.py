@@ -24,33 +24,39 @@ def set_washing(state):
         if cooling_logic.in_progress():
             print("ERROR: mode mixing, request washing while cooling")
         else:
-            washing_logic.start()
-            oled_display.set_current_mode("SPAL")
-            advertise_state(Mode.WASHING, 1)
+            if washing_logic.in_progress():
+                print("ERROR: washing already in progress")
+            else:
+                washing_logic.start()
+                oled_display.set_current_mode("SPAL")
+                advertise_state(Mode.WASHING.upper(), 1)
     else:
         if washing_logic.in_progress():
             washing_logic.stop()
             oled_display.set_current_mode("")
-            advertise_state(Mode.WASHING, 0)
+            advertise_state(Mode.WASHING.upper(), 0)
 
 def set_cooling(state):
     if state == 1:
         if washing_logic.in_progress():
             print("ERROR: mode mixing, request cooling while washing")
         else:
-            cooling_logic.start()
-            oled_display.set_current_mode("FRIG")
-            advertise_state(Mode.COOLING, 1)
+            if cooling_logic.in_progress():
+                print("ERROR: cooling already in progress")
+            else:
+                cooling_logic.start()
+                oled_display.set_current_mode("FRIG")
+                advertise_state(Mode.COOLING.upper(), 1)
     else:
         if cooling_logic.in_progress():
             cooling_logic.stop()
             oled_display.set_current_mode("")
-            advertise_state(Mode.COOLING, 0)
+            advertise_state(Mode.COOLING.upper(), 0)
 
 def set_mixing(state):
     if state == 1:
         cooling_logic.set_mixing()
-        advertise_state(Mode.MIXING, 1)
+        advertise_state(Mode.MIXING.upper(), 1)
 
 def handle_buttons(thing):
     if thing.alias == common_pins.BUTTON_WASHING.name:
