@@ -1,10 +1,8 @@
-import uasyncio as asyncio
+import asyncio
 from machine import SPI, Pin
 import common
 import common_pins
-import struct
 import driver_max31865
-import oled_display
 
 environment_sensors = []
 realtime_sensors = []
@@ -62,7 +60,6 @@ async def environment_sensors_action():
                     sensor.dirty = False
                     if on_state_change_cb is not None:
                         on_state_change_cb(sensor.alias, sensor.data)
-                    oled_display.refresh_screen()
 
             if sensor.error_msg is not None:
                 if on_state_change_cb is not None:

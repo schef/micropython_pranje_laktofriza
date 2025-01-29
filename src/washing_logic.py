@@ -7,7 +7,6 @@ in_progress_status = False
 start_timestamp = 0
 current_state = ""
 timeout = 0
-on_state_change_cb = None
 
 pin_relays = [
     common_pins.VENTIL_HLADNA,
@@ -22,17 +21,12 @@ def init():
     print("[WL]: init")
     stop()
 
-def register_on_state_change_cb(func):
-    global on_state_change_cb
-    on_state_change_cb = func
-
 def get_relay_state(pin):
     return leds.get_state_by_name(pin.name)
 
 def set_relay_state(pin, state):
     global current_state
     leds.set_state_by_name(pin.name, state)
-    set_currert_state(f"{pin.name} {state}")
 
 def check_action(start, timeout):
     if seconds_passed(start_timestamp) >= start:
@@ -137,7 +131,6 @@ def start():
     global in_progress_status, start_timestamp, current_state
     in_progress_status = True
     start_timestamp = get_seconds()
-    set_currert_state("ON")
 
 def stop():
     print("[WL]: stop")
@@ -147,16 +140,9 @@ def stop():
     for pin in pin_relays:
         if get_relay_state(pin) != 0:
             set_relay_state(pin, 0)
-    set_currert_state("OFF")
 
 def in_progress():
     return in_progress_status
-
-def set_currert_state(state):
-    global current_state
-    current_state = state
-    if on_state_change_cb is not None:
-        on_state_change_cb(state)
 
 async def loop():
     print("[WL]: loop")

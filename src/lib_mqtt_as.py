@@ -13,7 +13,7 @@ import wlan as lan
 
 gc.collect()
 from ubinascii import hexlify
-import uasyncio as asyncio
+import asyncio
 
 gc.collect()
 from utime import ticks_ms, ticks_diff
@@ -34,7 +34,7 @@ VERSION = (0, 6, 0)
 _DEFAULT_MS = const(20)
 _SOCKET_POLL_DELAY = const(5)  # 100ms added greatly to publish latency
 
-# Legitimate errors while waiting on a socket. See uasyncio __init__.py open_connection().
+# Legitimate errors while waiting on a socket. See asyncio __init__.py open_connection().
 if platform == 'esp32' or platform == 'esp32_LoBo':
     # https://forum.micropython.org/viewtopic.php?f=16&t=3608&p=20942#p20942
     BUSY_ERRORS = [EINPROGRESS, ETIMEDOUT, 118, 119]  # Add in weird ESP32 errors

@@ -1,11 +1,12 @@
-import uasyncio as asyncio
+import asyncio
+import buttons
 import sensors
 import mqtt
 import version
-import phy_interface
 import leds
-import washing_logic
-import cooling_logic
+import phy_interface
+import wlan
+import oled_display
 
 class Thing:
     def __init__(self, path=None, alias=None, ignore_duplicates_out=False, ignore_duplicates_in=False, cb_out=None, cb_in=None):
@@ -38,9 +39,11 @@ things = [
     # logic
     Thing("version", cb_in=version.req_version),
     Thing("washing", cb_in=phy_interface.on_data_received),
-    Thing("washing_state"),
     Thing("cooling", cb_in=phy_interface.on_data_received),
-    Thing("cooling_state"),
+    Thing("mixing", cb_in=phy_interface.on_data_received),
+    Thing("b/washing", alias="BUTTON_WASHING"),
+    Thing("b/cooling", alias="BUTTON_COOLING"),
+    Thing("b/mixing", alias="BUTTON_MIXING"),
     Thing("heartbeat"),
 ]
 
@@ -65,6 +68,7 @@ def send_msg_req(t, data):
     t.data = data
 
 def on_sensor_state_change_callback(alias, data):
+    oled_display.refresh_screen()
     t = get_thing_from_alias(alias)
     if t is not None:
         send_msg_req(t, data)
@@ -85,23 +89,34 @@ def on_mqtt_message_received_callback(path, msg):
             t.dirty_in = True
         t.data = msg
 
-def on_washing_state_change_cb(state):
-    t = get_thing_from_path("washing_state")
+def on_button_state_change_callback(alias, data):
+    if data == 1:
+        t = get_thing_from_alias(alias)
+        if t is not None:
+            send_msg_req(t, data)
+            phy_interface.handle_buttons(t)
+
+def on_phy_interface_advertise_state_callback(alias, state):
+    t = get_thing_from_alias(alias)
     if t is not None:
         send_msg_req(t, state)
 
-def on_cooling_state_change_cb(state):
-    t = get_thing_from_path("cooling_state")
+def on_leds_advertise_state_callback(alias, state):
+    t = get_thing_from_alias(alias)
     if t is not None:
         send_msg_req(t, state)
+
+def on_wlan_connection_changed_callback():
+    oled_display.refresh_screen()
 
 def init():
     print("[THINGS]: init")
     sensors.register_on_state_change_callback(on_sensor_state_change_callback)
-    phy_interface.register_on_state_change_callback(on_sensor_state_change_callback)
     mqtt.register_on_message_received_callback(on_mqtt_message_received_callback)
-    washing_logic.register_on_state_change_cb(on_washing_state_change_cb)
-    cooling_logic.register_on_state_change_cb(on_cooling_state_change_cb)
+    buttons.register_on_state_change_callback(on_button_state_change_callback)
+    phy_interface.register_advertise_state_callback(on_phy_interface_advertise_state_callback)
+    leds.register_advertise_state_callback(on_leds_advertise_state_callback)
+    wlan.register_on_connection_changed_callback(on_wlan_connection_changed_callback)
 
 async def handle_msg_reqs():
     for t in things:

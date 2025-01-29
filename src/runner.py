@@ -8,7 +8,6 @@ import washing_logic
 import cooling_logic
 import wlan
 import mqtt
-import cli
 import heartbeat
 import things
 import oled_display
@@ -47,7 +46,6 @@ def init():
     cooling_logic.init()
     wlan.init()
     mqtt.init()
-    cli.init()
     things.init()
     oled_display.init()
     send_on_boot()
@@ -64,7 +62,6 @@ async def main():
     tasks.append(asyncio.create_task(cooling_logic.loop()))
     tasks.append(asyncio.create_task(wlan.loop()))
     tasks.append(asyncio.create_task(mqtt.loop_async()))
-    tasks.append(asyncio.create_task(common.loop_async("CLI", cli.action)))
     tasks.append(asyncio.create_task(heartbeat.action()))
     tasks.append(asyncio.create_task(things.loop_async()))
     tasks.append(asyncio.create_task(lan_reboot.action()))

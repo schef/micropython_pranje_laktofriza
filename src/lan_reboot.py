@@ -1,4 +1,4 @@
-import uasyncio as asyncio
+import asyncio
 import machine
 import phy_interface
 import wlan as lan

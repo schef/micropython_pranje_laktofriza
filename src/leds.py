@@ -1,4 +1,4 @@
-import uasyncio as asyncio
+import asyncio
 import time
 import common
 import common_pins
@@ -45,14 +45,24 @@ class Led:
     def get_state(self):
         return self.state
 
+advertise_state_callback = None
+
+def register_advertise_state_callback(callback):
+    global advertise_state_callback
+    advertise_state_callback = callback
+
 def set_state_by_name(name, state):
     print("[LEDS]: set_state_by_name(%s, %s)" % (name, state))
     for relay in relays:
         if relay.name == name:
             relay.set_state(state)
+            if advertise_state_callback is not None:
+                advertise_state_callback(name, state)
     for led in leds:
         if led.name == name:
             led.set_state(state)
+            if advertise_state_callback is not None:
+                advertise_state_callback(name, state)
 
 def get_state_by_name(name):
     for relay in relays:
@@ -79,8 +89,6 @@ def on_relay_direct(thing):
         if led is not None:
             if led.state != state:
                 led.set_state(state)
-                thing.data = state
-                thing.dirty_out = True
     if thing.data == "request":
         state = get_state_by_name(thing.alias)
         print(thing.alias, thing.data)

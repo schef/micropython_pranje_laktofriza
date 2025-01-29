@@ -1,68 +1,106 @@
+import asyncio
 import common_pins
-import uasyncio as asyncio
-import buttons
 import oled_display
 import washing_logic
 import cooling_logic
 
-def on_button_state_change_callback(alias, data):
-    #if alias == common_pins.OLED_BUTTON_NEXT.name:
-    #    if data == 1:
-    #        await oled_display.handle_button_next()
-    #elif alias == common_pins.OLED_BUTTON_SELECT.name:
-    #    if data == 1:
-    #        await oled_display.handle_button_select()
-    if alias == common_pins.BUTTON.name:
-        if data == 1:
-            if washing_logic.in_progress():
-                washing_logic.stop()
-                if on_state_change_cb is not None:
-                    on_state_change_cb("washing", "0")
-                oled_display.set_current_mode("")
-            else:
-                washing_logic.start()
-                if on_state_change_cb is not None:
-                    on_state_change_cb("washing", "1")
-                oled_display.set_current_mode("SPAL")
+class Mode:
+    WASHING = "washing"
+    COOLING = "cooling"
+    MIXING = "mixing"
+
+advertise_state_callback = None
+
+def register_advertise_state_callback(callback):
+    global advertise_state_callback
+    advertise_state_callback = callback
+
+def advertise_state(mode, state):
+    if advertise_state_callback is not None:
+        advertise_state_callback(mode, str(state))
+
+def set_washing(state):
+    if state == 1:
+        if cooling_logic.in_progress():
+            print("ERROR: mode mixing, request washing while cooling")
+        else:
+            washing_logic.start()
+            oled_display.set_current_mode("SPAL")
+            advertise_state(Mode.WASHING, 1)
+    else:
+        if washing_logic.in_progress():
+            washing_logic.stop()
+            oled_display.set_current_mode("")
+            advertise_state(Mode.WASHING, 0)
+
+def set_cooling(state):
+    if state == 1:
+        if washing_logic.in_progress():
+            print("ERROR: mode mixing, request cooling while washing")
+        else:
+            cooling_logic.start()
+            oled_display.set_current_mode("FRIG")
+            advertise_state(Mode.COOLING, 1)
+    else:
+        if cooling_logic.in_progress():
+            cooling_logic.stop()
+            oled_display.set_current_mode("")
+            advertise_state(Mode.COOLING, 0)
+
+def set_mixing(state):
+    if state == 1:
+        cooling_logic.set_mixing()
+        advertise_state(Mode.MIXING, 1)
+
+def handle_buttons(thing):
+    if thing.alias == common_pins.BUTTON_WASHING.name:
+        if not washing_logic.in_progress():
+            set_washing(1)
+        else:
+            set_washing(0)
+    elif thing.alias == common_pins.BUTTON_COOLING.name:
+        if not cooling_logic.in_progress():
+            set_cooling(1)
+        else:
+            set_cooling(0)
+    elif thing.alias == common_pins.BUTTON_MIXING.name:
+        if cooling_logic.in_progress():
+            set_mixing(1)
+
+def handle_request(thing):
+    if thing.data == "request":
+        state = None
+        if thing.alias == Mode.WASHING:
+            state = washing_logic.in_progress()
+        if thing.alias == Mode.COOLING:
+            state = cooling_logic.in_progress()
+        if thing.alias == Mode.MIXING:
+            state = cooling_logic.is_mixing()
+        if state is not None:
+            thing.data = state
+            thing.dirty_out = True
 
 def on_data_received(thing):
-    if thing.path == "cooling":
-        if thing.data == "1" and not washing_logic.in_progress():
-            cooling_logic.start()
-            if on_state_change_cb is not None:
-                on_state_change_cb(thing.path, "1")
-            oled_display.set_current_mode("FRIG")
-        elif thing.data == "0":
-            cooling_logic.stop()
-            if on_state_change_cb is not None:
-                on_state_change_cb(thing.path, "0")
-            oled_display.set_current_mode("")
-        elif thing.data == "":
-            if on_state_change_cb is not None:
-                on_state_change_cb(thing.path, str(int(cooling_logic.in_progress())))
-    elif thing.path == "washing":
-        if thing.data == "1" and not cooling_logic.in_progress():
-            washing_logic.start()
-            if on_state_change_cb is not None:
-                on_state_change_cb(thing.path, "1")
-            oled_display.set_current_mode("washing")
-        elif thing.data == "0":
-            washing_logic.stop()
-            if on_state_change_cb is not None:
-                on_state_change_cb(thing.path, "0")
-            oled_display.set_current_mode("")
-        elif thing.data == "":
-            if on_state_change_cb is not None:
-                on_state_change_cb(thing.path, str(int(washing_logic.in_progress())))
+    handle_request(thing)
 
-def register_on_state_change_callback(cb):
-    global on_state_change_cb
-    print("[PHY]: register on state change cb")
-    on_state_change_cb = cb
+    if thing.path == Mode.COOLING:
+        if thing.data == "1":
+            set_cooling(1)
+        elif thing.data == "0":
+            set_cooling(0)
+
+    elif thing.path == Mode.WASHING:
+        if thing.data == "1":
+            set_washing(1)
+        elif thing.data == "0":
+            set_washing(0)
+
+    elif thing.path == Mode.MIXING:
+        if thing.data == "1":
+            set_mixing(1)
 
 def init():
     print("[PHY]: init")
-    buttons.register_on_state_change_callback(on_button_state_change_callback)
 
 async def action():
     while True:

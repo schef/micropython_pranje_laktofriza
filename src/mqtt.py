@@ -1,4 +1,4 @@
-import uasyncio as asyncio
+import asyncio
 from lib_mqtt_as import MQTTClient
 import wlan as lan
 

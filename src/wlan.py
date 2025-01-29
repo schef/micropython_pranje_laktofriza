@@ -5,7 +5,7 @@ import credentials
 wlan = None
 mac = None
 rssi = 0
-on_connection_changed_cb = None
+on_connection_changed_callback = None
 reboot_requested = False
 
 def init():
@@ -24,12 +24,12 @@ async def connect_wifi():
             await asyncio.sleep(1)
     print(f"[WLAN]: connected[{wlan.ifconfig()}]")
     rssi = wlan.status("rssi")
-    if on_connection_changed_cb is not None:
-        on_connection_changed_cb()
+    if on_connection_changed_callback is not None:
+        on_connection_changed_callback()
 
-def register_on_connection_changed_cb(func):
-    global on_connection_changed_cb
-    on_connection_changed_cb = func
+def register_on_connection_changed_callback(func):
+    global on_connection_changed_callback
+    on_connection_changed_callback = func
 
 def check_link():
     return wlan.isconnected()
@@ -48,14 +48,14 @@ async def loop():
         if not wlan.isconnected():
             print("[WLAN]: no connection")
             rssi = 0
-            if on_connection_changed_cb is not None:
-                on_connection_changed_cb()
+            if on_connection_changed_callback is not None:
+                on_connection_changed_callback()
             await connect_wifi()
         else:
             new_rssi = wlan.status("rssi")
             if rssi != new_rssi:
                 rssi = new_rssi
                 print(f"[WLAN]: rssi {rssi}")
-                if on_connection_changed_cb is not None:
-                    on_connection_changed_cb()
+                if on_connection_changed_callback is not None:
+                    on_connection_changed_callback()
         await asyncio.sleep(10)

@@ -1,4 +1,3 @@
-import uasyncio as asyncio
 from machine import Pin
 import common_pins
 
@@ -6,7 +5,10 @@ on_state_change_cb = None
 buttons = []
 button_pins = [common_pins.OLED_BUTTON_NEXT,
                common_pins.OLED_BUTTON_SELECT,
-               common_pins.BUTTON]
+               common_pins.BUTTON_WASHING,
+               common_pins.BUTTON_COOLING,
+               common_pins.BUTTON_MIXING,
+               ]
 
 class Button:
     def __init__(self, pin, active_high = False):

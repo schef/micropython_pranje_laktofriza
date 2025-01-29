@@ -1,6 +1,6 @@
 from machine import Pin
 from time import ticks_ms, sleep
-import uasyncio as asyncio
+import asyncio
 
 last_millis = 0
 millis_overflow_counter = 0
