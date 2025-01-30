@@ -63,7 +63,7 @@ def get_temperature():
 
 async def loop():
     print("[CL]: loop")
-    global mixer_timestamp, mixer_periodic_timestamp
+    global mixer_timestamp, mixer_periodic_timestamp, delay_timestamp
     kompresor = leds.get_led_by_name(common_pins.KOMPRESOR.name)
     mixer = leds.get_led_by_name(common_pins.MIXER.name)
     while True:
