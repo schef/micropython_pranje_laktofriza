@@ -39,7 +39,6 @@ def init():
 
     buttons.init()
     buttons.action()
-    leds.init()
     phy_interface.init()
     sensors.init()
     washing_logic.init()
@@ -47,6 +46,7 @@ def init():
     wlan.init()
     mqtt.init()
     things.init()
+    leds.init()
     oled_display.init()
     send_on_boot()
 
