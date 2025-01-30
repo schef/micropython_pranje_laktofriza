@@ -11,10 +11,11 @@ timeout = 0
 
 mixer_timestamp = 0
 mixer_periodic_timestamp = 0
+delay_timestamp = 0
+
 mixer_timeout = 15 * 60 * 1000
-mixer_timeout = 5 * 1000
 mixer_periodic_timeout = 15 * 60 * 1000
-mixer_periodic_timeout = 15 * 1000
+delay_timeout = 20 * 60 * 1000
 
 def init():
     print("[CL]: init")
@@ -27,10 +28,11 @@ def start():
 
 def stop():
     print("[CL]: stop")
-    global in_progress_status
+    global in_progress_status, delay_timestamp
     in_progress_status = False
     leds.set_state_by_name(common_pins.KOMPRESOR.name, 0)
     leds.set_state_by_name(common_pins.MIXER.name, 0)
+    delay_timestamp = 0
 
 def in_progress():
     return in_progress_status
@@ -39,9 +41,15 @@ def is_mixing():
     return False
 
 def set_mixing():
+    print("[CL]: set_mixing")
     global mixer_timestamp, mixer_periodic_timestamp
     mixer_periodic_timestamp = 0
     mixer_timestamp = get_millis()
+
+def set_delay():
+    print("[CL]: set_delay")
+    global delay_timestamp
+    delay_timestamp = get_millis()
 
 def get_temperature():
     temperature = sensors.environment_sensors[0].get_temperature()
@@ -59,6 +67,14 @@ async def loop():
     mixer = leds.get_led_by_name(common_pins.MIXER.name)
     while True:
         if in_progress_status:
+            if delay_timestamp != 0:
+                if kompresor.get_state() == 1:
+                    kompresor.set_state(0)
+                if mixer.get_state() == 1:
+                    mixer.set_state(0)
+                if get_millis(delay_timestamp) >= delay_timeout:
+                    delay_timestamp = 0
+                continue
             temperature = get_temperature()
             if temperature is not None:
                 if kompresor.get_state() == 0:

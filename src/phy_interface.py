@@ -36,7 +36,7 @@ def set_washing(state):
             oled_display.set_current_mode("")
             advertise_state(Mode.WASHING.upper(), 0)
 
-def set_cooling(state):
+def set_cooling(state, delay = False):
     if state == 1:
         if washing_logic.in_progress():
             print("ERROR: mode mixing, request cooling while washing")
@@ -44,6 +44,8 @@ def set_cooling(state):
             if cooling_logic.in_progress():
                 print("ERROR: cooling already in progress")
             else:
+                if delay:
+                        cooling_logic.set_delay()
                 cooling_logic.start()
                 oled_display.set_current_mode("FRIG")
                 advertise_state(Mode.COOLING.upper(), 1)
@@ -66,7 +68,7 @@ def handle_buttons(thing):
             set_washing(0)
     elif thing.alias == common_pins.BUTTON_COOLING.name:
         if not cooling_logic.in_progress():
-            set_cooling(1)
+            set_cooling(1, delay = True)
         else:
             set_cooling(0)
     elif thing.alias == common_pins.BUTTON_MIXING.name:
@@ -107,6 +109,8 @@ def on_data_received(thing):
 
 def init():
     print("[PHY]: init")
+    set_washing(0)
+    set_cooling(0)
 
 async def action():
     while True:
