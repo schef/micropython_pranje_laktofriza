@@ -42,9 +42,10 @@ def is_mixing():
 
 def set_mixing():
     print("[CL]: set_mixing")
-    global mixer_timestamp, mixer_periodic_timestamp
+    global mixer_timestamp, mixer_periodic_timestamp, delay_timestamp
     mixer_periodic_timestamp = 0
     mixer_timestamp = get_millis()
+    delay_timestamp = 0
 
 def set_delay():
     print("[CL]: set_delay")
