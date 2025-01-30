@@ -41,7 +41,6 @@ def is_mixing():
     return False
 
 def set_mixing():
-    print("[CL]: set_mixing")
     global mixer_timestamp, mixer_periodic_timestamp, delay_timestamp
     mixer_periodic_timestamp = 0
     mixer_timestamp = get_millis()
@@ -73,8 +72,9 @@ async def loop():
                     kompresor.set_state(0)
                 if mixer.get_state() == 1:
                     mixer.set_state(0)
-                if get_millis(delay_timestamp) >= delay_timeout:
+                if millis_passed(delay_timestamp) >= delay_timeout:
                     delay_timestamp = 0
+                await asyncio.sleep(1)
                 continue
             temperature = get_temperature()
             if temperature is not None:
