@@ -109,8 +109,8 @@ def on_data_received(thing):
 
 def force_advertise_states():
     if advertise_state_callback is not None:
-        advertise_state(Mode.WASHING.upper(), washing_logic.in_progress())
-        advertise_state(Mode.COOLING.upper(), cooling_logic.in_progress())
+        advertise_state(Mode.WASHING.upper(), int(washing_logic.in_progress()))
+        advertise_state(Mode.COOLING.upper(), int(cooling_logic.in_progress()))
 
 def init():
     print("[PHY]: init")
