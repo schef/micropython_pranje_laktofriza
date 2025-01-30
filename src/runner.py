@@ -48,6 +48,7 @@ def init():
     mqtt.init()
     things.init()
     leds.force_advertise_states()
+    phy_interface.force_advertise_states()
     oled_display.init()
     send_on_boot()
 

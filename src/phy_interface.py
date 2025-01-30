@@ -107,10 +107,12 @@ def on_data_received(thing):
         if thing.data == "1":
             set_mixing(1)
 
-def init():
-    print("[PHY]: init")
+def force_advertise_states():
     set_washing(0)
     set_cooling(0)
+
+def init():
+    print("[PHY]: init")
 
 async def action():
     while True:
