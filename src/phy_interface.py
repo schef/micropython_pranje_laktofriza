@@ -108,8 +108,9 @@ def on_data_received(thing):
             set_mixing(1)
 
 def force_advertise_states():
-    set_washing(0)
-    set_cooling(0)
+    if advertise_state_callback is not None:
+        advertise_state(Mode.WASHING.upper(), washing_logic.in_progress())
+        advertise_state(Mode.COOLING.upper(), cooling_logic.in_progress())
 
 def init():
     print("[PHY]: init")
