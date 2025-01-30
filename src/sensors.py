@@ -30,6 +30,8 @@ class TempReader:
     async def action(self):
         try:
             self.data = self.max_sensor.temperature
+            if self.data is not None:
+                self.data = self.data - 3.25
             self.last_data = self.data
             self.dirty = True
         except Exception as e:

@@ -127,6 +127,13 @@ def init_leds():
         else:
             leds.append(Led(pin.id, pin.name, active_high = True))
 
+def force_advertise_states():
+    if advertise_state_callback is not None:
+        for led in leds:
+            advertise_state_callback(led.name, led.get_state())
+        for relay in relays:
+            advertise_state_callback(relay.name, relay.get_state())
+
 def init():
     print("[LEDS]: init")
     init_relays()
