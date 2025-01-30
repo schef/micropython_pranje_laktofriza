@@ -14,7 +14,7 @@ _MAX31865_LOW_FAULT_THRESHOLD_LSB_REG = const(0x06)
 _MAX31865_FAULT_STATUS_REG = const(0x07)
 
 # hidden constants
-_REFERENCE_RESISTOR = const(425)
+_REFERENCE_RESISTOR = const(430)
 _RTD_0 = const(100) # RTD resistance at 0degC
 _RTD_A = const(3.9083e-3)
 _RTD_B = (-5.775e-7)
