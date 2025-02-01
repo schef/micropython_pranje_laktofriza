@@ -63,11 +63,15 @@ def set_mixing(state):
 def handle_buttons(thing):
     if thing.alias == common_pins.BUTTON_WASHING.name:
         if not washing_logic.in_progress():
+            if cooling_logic.in_progress():
+                set_cooling(0)
             set_washing(1)
         else:
             set_washing(0)
     elif thing.alias == common_pins.BUTTON_COOLING.name:
         if not cooling_logic.in_progress():
+            if washing_logic.in_progress():
+                set_washing(0)
             set_cooling(1, delay = True)
         else:
             set_cooling(0)

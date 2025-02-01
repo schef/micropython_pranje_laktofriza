@@ -13,8 +13,8 @@ mixer_timestamp = 0
 mixer_periodic_timestamp = 0
 delay_timestamp = 0
 
-mixer_timeout = 15 * 60 * 1000
-mixer_periodic_timeout = 15 * 60 * 1000
+mixer_timeout = 5 * 60 * 1000
+mixer_periodic_timeout = 55 * 60 * 1000
 delay_timeout = 20 * 60 * 1000
 
 def init():
