@@ -102,7 +102,6 @@ def on_phy_interface_advertise_state_callback(alias, state):
         send_msg_req(t, state)
 
 def on_leds_advertise_state_callback(alias, state):
-    print("TUSAM", alias, state)
     t = get_thing_from_alias(alias)
     if t is not None:
         send_msg_req(t, state)

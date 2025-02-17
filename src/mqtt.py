@@ -42,7 +42,7 @@ def on_mqtt_message_received(topic, msg, retained):
 async def send_message(topic, msg):
     topic_out = "%s/%s" % (PUBLISH_PREFIX, topic)
     print("[MQTT]: sent [%s] -> [%s]" % (topic, msg))
-    await client.publish(topic_out, msg, retain=True, qos=1)
+    await client.publish(topic_out, msg, retain=False, qos=1)
 
 def register_on_message_received_callback(cb):
     global on_message_received_cb

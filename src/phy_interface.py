@@ -19,65 +19,77 @@ def advertise_state(mode, state):
     if advertise_state_callback is not None:
         advertise_state_callback(mode, str(state))
 
-def set_washing(state):
-    if state == 1:
+def _set_washing(state):
+    if state:
+        washing_logic.start()
+        oled_display.set_current_mode("SPAL")
+        advertise_state(Mode.WASHING.upper(), 1)
+    else:
+        washing_logic.stop()
+        oled_display.set_current_mode("")
+        advertise_state(Mode.WASHING.upper(), 0)
+
+def _set_cooling(state, delay = False):
+    if state:
+        if delay:
+                cooling_logic.set_delay()
+        cooling_logic.start()
+        oled_display.set_current_mode("FRIG")
+        advertise_state(Mode.COOLING.upper(), 1)
+    else:
+        cooling_logic.stop()
+        oled_display.set_current_mode("")
+        advertise_state(Mode.COOLING.upper(), 0)
+
+def _set_mixing(state):
+    if state:
         if cooling_logic.in_progress():
-            print("ERROR: mode mixing, request washing while cooling")
+            cooling_logic.set_mixing()
+            advertise_state(Mode.MIXING.upper(), 1)
         else:
-            if washing_logic.in_progress():
-                print("ERROR: washing already in progress")
-            else:
-                washing_logic.start()
-                oled_display.set_current_mode("SPAL")
-                advertise_state(Mode.WASHING.upper(), 1)
+            print("ERROR: cooling not in progress")
+
+def set_washing(state):
+    if state:
+        if washing_logic.in_progress():
+            print("ERROR: washing already in progress")
+        else:
+            if cooling_logic.in_progress():
+                _set_cooling(0)
+            _set_washing(1)
     else:
         if washing_logic.in_progress():
-            washing_logic.stop()
-            oled_display.set_current_mode("")
-            advertise_state(Mode.WASHING.upper(), 0)
+            _set_washing(0)
 
 def set_cooling(state, delay = False):
     if state == 1:
-        if washing_logic.in_progress():
-            print("ERROR: mode mixing, request cooling while washing")
+        if cooling_logic.in_progress():
+            print("ERROR: cooling already in progress")
         else:
-            if cooling_logic.in_progress():
-                print("ERROR: cooling already in progress")
-            else:
-                if delay:
-                        cooling_logic.set_delay()
-                cooling_logic.start()
-                oled_display.set_current_mode("FRIG")
-                advertise_state(Mode.COOLING.upper(), 1)
+            if washing_logic.in_progress():
+                _set_washing(0)
+            _set_cooling(1, delay)
     else:
         if cooling_logic.in_progress():
-            cooling_logic.stop()
-            oled_display.set_current_mode("")
-            advertise_state(Mode.COOLING.upper(), 0)
+            _set_cooling(0)
 
 def set_mixing(state):
     if state == 1:
-        cooling_logic.set_mixing()
-        advertise_state(Mode.MIXING.upper(), 1)
+        _set_mixing(state)
 
 def handle_buttons(thing):
     if thing.alias == common_pins.BUTTON_WASHING.name:
-        if not washing_logic.in_progress():
-            if cooling_logic.in_progress():
-                set_cooling(0)
-            set_washing(1)
-        else:
+        if washing_logic.in_progress():
             set_washing(0)
-    elif thing.alias == common_pins.BUTTON_COOLING.name:
-        if not cooling_logic.in_progress():
-            if washing_logic.in_progress():
-                set_washing(0)
-            set_cooling(1, delay = True)
         else:
-            set_cooling(0)
-    elif thing.alias == common_pins.BUTTON_MIXING.name:
+            set_washing(1)
+    elif thing.alias == common_pins.BUTTON_COOLING.name:
         if cooling_logic.in_progress():
-            set_mixing(1)
+            set_cooling(0)
+        else:
+            set_cooling(1, delay = True)
+    elif thing.alias == common_pins.BUTTON_MIXING.name:
+        set_mixing(1)
 
 def handle_request(thing):
     if thing.data == "request":
